@@ -21,7 +21,7 @@ spec:
         source: |
           # Get the XR spec fields
           projectName = option("params")?.oxr?.spec.parameters.projectName or "nodefined"
-          vpccidrBlock = option("params")?.oxr?.spec.parameters.vpccidrBlock or "10.0.0.0/16"  # Valor por defecto si no se proporciona
+          vpccidrBlock = option("params")?.oxr?.spec.parameters.vpccidrBlock or "10.0.0.0/16" 
           region = option("params")?.oxr?.spec.region or "us-east-1"
           # Render XR to crossplane managed resources
           providerConfigName = option("params")?.oxr?.spec?.providerConfigName or "segoja7"
