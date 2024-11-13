@@ -1,0 +1,58 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: multiazwordpressinfra-composition
+spec:
+  compositeTypeRef:
+    apiVersion: segoja7.example/v1alpha1
+    kind: MultiAzWordpressInfra
+  mode: Pipeline
+  pipeline:
+  - step: normal
+    functionRef:
+      name: kcl-function
+    input:
+      apiVersion: krm.kcl.dev/v1alpha1
+      kind: KCLRun
+      metadata:
+        name: resources
+      spec:
+        target: Resources
+        source: |
+          # Get the XR spec fields
+          projectName = option("params")?.oxr?.spec.parameters.projectName or "nodefined"
+          vpccidrBlock = option("params")?.oxr?.spec.parameters.vpccidrBlock or "10.0.0.0/16"  # Valor por defecto si no se proporciona
+          region = option("params")?.oxr?.spec.region or "us-east-1"
+          # Render XR to crossplane managed resources
+          providerConfigName = option("params")?.oxr?.spec?.providerConfigName or "segoja7"
+          vpc = {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "VPC"
+              metadata.name = "vpc"
+              spec.forProvider = {
+                  region = region
+                  cidrBlock = vpccidrBlock
+                  enableDnsSupport = True
+                  enableDnsHostnames = True
+                  tags = {
+                    "app" = "wordpress"
+                    "Name" = metadata.name+"-"+projectName
+                  }
+              }
+              spec.providerConfigRef.name = providerConfigName
+          }
+          gateway = {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "InternetGateway"
+              metadata.name = "gateway"
+              spec.forProvider = {
+                  region = region
+                  vpcIdSelector.matchControllerRef = True
+                  tags = {
+                    "app" = "wordpress"
+                    "Name" = metadata.name+"-"+projectName
+                  }                  
+              }
+              spec.providerConfigRef.name = providerConfigName
+          }
+          items = [vpc, gateway]
