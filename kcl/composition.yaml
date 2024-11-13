@@ -55,4 +55,15 @@ spec:
               }
               spec.providerConfigRef.name = providerConfigName
           }
-          items = [vpc, gateway]
+          subnets = {
+              apiVersion: ec2.aws.upbound.io/v1beta1
+              kind = "Subnet"
+              metadata.name = "database"
+              spec.forProvider = {
+                  region = region
+                  vpcIdSelector.matchControllerRef = True
+                  availabilityZone: us-east-1a
+                  cidrBlock: 172.16.1.0/24
+              }
+          }
+          items = [vpc, gateway, subnets]
