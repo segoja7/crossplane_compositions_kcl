@@ -32,7 +32,11 @@ spec:
               {"name": "app-private-subnet-az2", "cidr": "172.16.4.0/24", "zone": "us-east-1b", "type": "private"},
               {"name": "public-subnet-az1", "cidr": "172.16.5.0/24", "zone": "us-east-1a", "type": "public"},
               {"name": "public-subnet-az2", "cidr": "172.16.6.0/24", "zone": "us-east-1b", "type": "public"}
-          ]                      
+          ]
+          routeTableConfig = [
+              {"name": "public", "subnet_type": "public"},
+              {"name": "private", "subnet_type": "private"}
+          ]                                
           vpc = {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "VPC"
@@ -87,5 +91,21 @@ spec:
                   spec.providerConfigRef.name = providerConfigName
               } for subnet_config in database_subnet_configs
           ]
-       
-          items = [vpc, gateway] + subnets
+          routeTable = [
+              {
+                  apiVersion = "ec2.aws.upbound.io/v1beta1"
+                  kind = "RouteTable"
+                  metadata.name = "route-table-" + route_config.name
+                  spec.forProvider = {
+                      region = region
+                      vpcIdSelector.matchControllerRef = True
+                      tags = {
+                          "app" = "wordpress"
+                          "Name" = metadata.name + "-" + projectName
+                      }
+                  }
+                  spec.providerConfigRef.name = providerConfigName
+              } for route_config in routeTableConfig
+          ]
+
+          items = [vpc, gateway] + subnets + routeTable
