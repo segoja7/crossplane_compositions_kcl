@@ -81,7 +81,7 @@ spec:
                       vpcIdSelector.matchControllerRef = True
                       availabilityZone = subnet_config.zone
                       cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch: false
+                      mapPublicIpOnLaunch = False
                       tags = {
                         "app" = "wordpress"
                         "Name" = metadata.name + "-" + projectName
@@ -103,7 +103,7 @@ spec:
                       vpcIdSelector.matchControllerRef = True
                       availabilityZone = subnet_config.zone
                       cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch: false
+                      mapPublicIpOnLaunch = False
                       tags = {
                         "app" = "wordpress"
                         "Name" = metadata.name + "-" + projectName
@@ -125,7 +125,7 @@ spec:
                       vpcIdSelector.matchControllerRef = True
                       availabilityZone = subnet_config.zone
                       cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch: true
+                      mapPublicIpOnLaunch = True
                       tags = {
                         "app" = "wordpress"
                         "Name" = metadata.name + "-" + projectName
