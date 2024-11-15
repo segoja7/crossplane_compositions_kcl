@@ -68,4 +68,67 @@ spec:
               }
               spec.providerConfigRef.name = providerConfigName
           }
-          items = [vpc, gateway]
+          subnets = [ 
+              {
+                  apiVersion = "ec2.aws.upbound.io/v1beta1"
+                  kind = "Subnet"
+                  metadata.name = subnet_config.name
+                  metadata.annotations: {
+                      "krm.kcl.dev/composition-resource-name" = "data-" + subnet_config.zone
+                  }
+                  spec.forProvider = {
+                      region = region
+                      vpcIdSelector.matchControllerRef = True
+                      availabilityZone = subnet_config.zone
+                      cidrBlock = subnet_config.cidr
+                      tags = {
+                        "app" = "wordpress"
+                        "Name" = metadata.name + "-" + projectName
+                      }
+                  }
+                  spec.providerConfigRef.name = providerConfigName
+              } for subnet_config in database_subnet_configs
+          ]
+          app_subnets = [ 
+              {
+                  apiVersion = "ec2.aws.upbound.io/v1beta1"
+                  kind = "Subnet"
+                  metadata.name = subnet_config.name
+                  metadata.annotations: {
+                      "krm.kcl.dev/composition-resource-name" = "app-" + subnet_config.zone
+                  }
+                  spec.forProvider = {
+                      region = region
+                      vpcIdSelector.matchControllerRef = True
+                      availabilityZone = subnet_config.zone
+                      cidrBlock = subnet_config.cidr
+                      tags = {
+                        "app" = "wordpress"
+                        "Name" = metadata.name + "-" + projectName
+                      }
+                  }
+                  spec.providerConfigRef.name = providerConfigName
+              } for subnet_config in app_subnet_configs
+          ]
+          public_subnets = [ 
+              {
+                  apiVersion = "ec2.aws.upbound.io/v1beta1"
+                  kind = "Subnet"
+                  metadata.name = subnet_config.name
+                  metadata.annotations: {
+                      "krm.kcl.dev/composition-resource-name" = "public-" + subnet_config.zone
+                  }
+                  spec.forProvider = {
+                      region = region
+                      vpcIdSelector.matchControllerRef = True
+                      availabilityZone = subnet_config.zone
+                      cidrBlock = subnet_config.cidr
+                      tags = {
+                        "app" = "wordpress"
+                        "Name" = metadata.name + "-" + projectName
+                      }
+                  }
+                  spec.providerConfigRef.name = providerConfigName
+              } for subnet_config in public_subnet_configs
+          ]          
+          items = [vpc, gateway] + subnets + app_subnets + public_subnets
