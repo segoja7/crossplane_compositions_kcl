@@ -114,6 +114,9 @@ spec:
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "EIP"
               metadata.name = "eip-nat-gateway-az1"
+              metadata.labels = {
+                    eip = az1
+              }  
               spec.forProvider = {
                       region = region
                       tags = {
