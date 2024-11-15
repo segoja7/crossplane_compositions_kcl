@@ -96,6 +96,9 @@ spec:
                   apiVersion = "ec2.aws.upbound.io/v1beta1"
                   kind = "RouteTable"
                   metadata.name = "route-table-" + route_config.name
+                  metadata.labels = {
+                        route_table = route_config.name
+                  }  
                   spec.forProvider = {
                       region = region
                       vpcIdSelector.matchControllerRef = True
@@ -107,5 +110,17 @@ spec:
                   spec.providerConfigRef.name = providerConfigName
               } for route_config in routeTableConfig
           ]
-
-          items = [vpc, gateway] + subnets + routeTable
+          elasticIP = {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "EIP"
+              metadata.name = "eip-nat-gateway-az1"
+              spec.forProvider = {
+                      region = region
+                      tags = {
+                          "app" = "wordpress"
+                          "Name" = metadata.name + "-" + projectName
+                      }
+              }
+              spec.providerConfigRef.name = providerConfigName
+          }
+          items = [vpc, gateway, elasticIP] + subnets + routeTable
