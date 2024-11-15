@@ -30,8 +30,8 @@ spec:
               {"name": "data-private-subnet-az2", "cidr": "172.16.2.0/24", "zone": "us-east-1b", "type": "private"},
               {"name": "app-private-subnet-az1", "cidr": "172.16.3.0/24", "zone": "us-east-1a", "type": "private"},
               {"name": "app-private-subnet-az2", "cidr": "172.16.4.0/24", "zone": "us-east-1b", "type": "private"},
-              {"name": "public-private-subnet-az1", "cidr": "172.16.5.0/24", "zone": "us-east-1a", "type": "public"},
-              {"name": "public-private-subnet-az2", "cidr": "172.16.6.0/24", "zone": "us-east-1b", "type": "public"}
+              {"name": "public-subnet-az1", "cidr": "172.16.5.0/24", "zone": "us-east-1a", "type": "public"},
+              {"name": "public-subnet-az2", "cidr": "172.16.6.0/24", "zone": "us-east-1b", "type": "public"}
           ]                      
           vpc = {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
@@ -70,14 +70,14 @@ spec:
                   kind = "Subnet"
                   metadata.name = subnet_config.name
                   metadata.annotations: {
-                      "krm.kcl.dev/composition-resource-name" = "data-" + subnet_config.zone
+                      "krm.kcl.dev/composition-resource-name" = subnet_config.name + subnet_config.zone
                   }
                   spec.forProvider = {
                       region = region
                       vpcIdSelector.matchControllerRef = True
                       availabilityZone = subnet_config.zone
                       cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch = True if subnet_config.type == "private" else False
+                      mapPublicIpOnLaunch = True if subnet_config.type == "public" else False
                       tags = {
                         "app" = "wordpress"
                         "Name" = metadata.name + "-" + projectName
