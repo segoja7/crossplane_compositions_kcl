@@ -26,16 +26,12 @@ spec:
               "app" = "wordpress"
           }          
           database_subnet_configs = [
-              {"name": "data-private-subnet-az1", "cidr": "172.16.1.0/24", "zone": "us-east-1a"},
-              {"name": "data-private-subnet-az2", "cidr": "172.16.2.0/24", "zone": "us-east-1b"}
-          ]
-          app_subnet_configs = [
-              {"name": "app-private-subnet-az1", "cidr": "172.16.3.0/24", "zone": "us-east-1a"},
-              {"name": "app-private-subnet-az2", "cidr": "172.16.4.0/24", "zone": "us-east-1b"}
-          ]
-          public_subnet_configs = [
-              {"name": "public-private-subnet-az1", "cidr": "172.16.5.0/24", "zone": "us-east-1a"},
-              {"name": "public-private-subnet-az2", "cidr": "172.16.6.0/24", "zone": "us-east-1b"}
+              {"name": "data-private-subnet-az1", "cidr": "172.16.1.0/24", "zone": "us-east-1a", "type": "private"},
+              {"name": "data-private-subnet-az2", "cidr": "172.16.2.0/24", "zone": "us-east-1b", "type": "private"},
+              {"name": "app-private-subnet-az1", "cidr": "172.16.3.0/24", "zone": "us-east-1a", "type": "private"},
+              {"name": "app-private-subnet-az2", "cidr": "172.16.4.0/24", "zone": "us-east-1b", "type": "private"},
+              {"name": "public-private-subnet-az1", "cidr": "172.16.5.0/24", "zone": "us-east-1a", "type": "public"},
+              {"name": "public-private-subnet-az2", "cidr": "172.16.6.0/24", "zone": "us-east-1b", "type": "public"}
           ]                      
           vpc = {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
@@ -81,57 +77,15 @@ spec:
                       vpcIdSelector.matchControllerRef = True
                       availabilityZone = subnet_config.zone
                       cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch = False
+                      mapPublicIpOnLaunch = True if subnet_config.type == "private" else False
                       tags = {
                         "app" = "wordpress"
                         "Name" = metadata.name + "-" + projectName
+                        "Type" = subnet_config.type
                       }
                   }
                   spec.providerConfigRef.name = providerConfigName
               } for subnet_config in database_subnet_configs
           ]
-          app_subnets = [ 
-              {
-                  apiVersion = "ec2.aws.upbound.io/v1beta1"
-                  kind = "Subnet"
-                  metadata.name = subnet_config.name
-                  metadata.annotations: {
-                      "krm.kcl.dev/composition-resource-name" = "app-" + subnet_config.zone
-                  }
-                  spec.forProvider = {
-                      region = region
-                      vpcIdSelector.matchControllerRef = True
-                      availabilityZone = subnet_config.zone
-                      cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch = False
-                      tags = {
-                        "app" = "wordpress"
-                        "Name" = metadata.name + "-" + projectName
-                      }
-                  }
-                  spec.providerConfigRef.name = providerConfigName
-              } for subnet_config in app_subnet_configs
-          ]
-          public_subnets = [ 
-              {
-                  apiVersion = "ec2.aws.upbound.io/v1beta1"
-                  kind = "Subnet"
-                  metadata.name = subnet_config.name
-                  metadata.annotations: {
-                      "krm.kcl.dev/composition-resource-name" = "public-" + subnet_config.zone
-                  }
-                  spec.forProvider = {
-                      region = region
-                      vpcIdSelector.matchControllerRef = True
-                      availabilityZone = subnet_config.zone
-                      cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch = True
-                      tags = {
-                        "app" = "wordpress"
-                        "Name" = metadata.name + "-" + projectName
-                      }
-                  }
-                  spec.providerConfigRef.name = providerConfigName
-              } for subnet_config in public_subnet_configs
-          ]          
-          items = [vpc, gateway] + subnets + app_subnets + public_subnets
+       
+          items = [vpc, gateway] + subnets
