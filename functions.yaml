@@ -8,9 +8,9 @@ spec:
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
-  name: kcl-function
+  name: function-kcl
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-kcl:latest
+  package: xpkg.upbound.io/crossplane-contrib/function-kcl:v0.10.8
 ---
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
