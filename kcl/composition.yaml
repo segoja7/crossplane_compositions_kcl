@@ -152,6 +152,38 @@ spec:
           ]
           _resources += [
           {
+              apiVersion = "ec2.aws.upbound.io/v1beta2"
+              kind = "Route"
+              metadata.name = "publicroute"
+              spec.forProvider = {
+                  destinationCidrBlock = "0.0.0.0/0"
+                  region = region
+                  routeTableIdSelector.matchLabels = {
+                        "route_table" = "public"
+                  }
+                  gatewayIdSelector.matchControllerRef = True             
+              }
+              spec.providerConfigRef.name = providerConfigName
+          }
+          ]
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta2"
+              kind = "Route"
+              metadata.name = "privateroute"
+              spec.forProvider = {
+                  destinationCidrBlock = "0.0.0.0/0"
+                  region = region
+                  routeTableIdSelector.matchLabels = {
+                        "route_table" = "private"
+                  }
+                  natGatewayIdSelector.matchControllerRef = True             
+              }
+              spec.providerConfigRef.name = providerConfigName
+          }
+          ]          
+          _resources += [
+          {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "EIP"
               metadata.name = "eip-nat-gateway-az1"
