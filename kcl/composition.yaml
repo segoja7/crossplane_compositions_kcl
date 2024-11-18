@@ -37,7 +37,13 @@ spec:
               {"name": "public", "subnet_type": "public"},
               {"name": "private", "subnet_type": "private"}
           ]
-          count = 4                                
+          securityGroupsConfig = [
+              {"name": "ec2"},
+              {"name": "efs"},
+              {"name": "elb"},
+              {"name": "rds"}
+          ]
+                               
           _resources = [
           {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
@@ -217,6 +223,25 @@ spec:
               }
               spec.providerConfigRef.name = providerConfigName
           }
+          ]
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "SecurityGroup"
+              metadata.name = sg.name + "securitygroup"
+              spec.forProvider = {
+                  description = sg.name + " Wordpress Security Group"
+                  name = metadata.name
+                  region = region
+                  revokeRulesOnDelete = True
+                  tags = {
+                      "app" = "wordpress"
+                      "Name" = metadata.name + "-" + projectName
+                  }
+                  vpcIdSelector.matchControllerRef = True
+              }
+              spec.providerConfigRef.name = providerConfigName
+          } for sg in securityGroupsConfig
           ]                                   
           items = _resources
   - step: ready
