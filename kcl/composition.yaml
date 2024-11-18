@@ -36,8 +36,10 @@ spec:
           routeTableConfig = [
               {"name": "public", "subnet_type": "public"},
               {"name": "private", "subnet_type": "private"}
-          ]                                
-          vpc = {
+          ]
+          count = 4                                
+          _resources = [
+          {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "VPC"
               metadata.name = "vpc"
@@ -52,9 +54,7 @@ spec:
                   }
               }
               spec.providerConfigRef.name = providerConfigName
-          }
-          
-          gateway = {
+          },{
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "InternetGateway"
               metadata.name = "internetgateway"
@@ -66,57 +66,98 @@ spec:
                     "Name" = metadata.name + "-" + projectName
                   }
               }
+              spec.providerConfigRef.name = providerConfigName          
+          }]
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "Subnet"
+              metadata.name = subnet_config.name
+              metadata.labels = {
+                    type = subnet_config.type    
+              }
+              spec.forProvider = {
+                  region = region
+                  vpcIdSelector.matchControllerRef = True
+                  availabilityZone = subnet_config.zone
+                  cidrBlock = subnet_config.cidr
+                  mapPublicIpOnLaunch = True if subnet_config.type == "public" else False
+                  tags = {
+                    "app" = "wordpress"
+                    "Name" = metadata.name + "-" + projectName
+                    "Type" = subnet_config.type
+                  }
+              }
+              spec.providerConfigRef.name = providerConfigName         
+          }for subnet_config in database_subnet_configs 
+          ]
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "RouteTable"
+              metadata.name = "route-table-" + route_config.name
+              metadata.labels = {
+                    route_table = route_config.name
+              }  
+              spec.forProvider = {
+                  region = region
+                  vpcIdSelector.matchControllerRef = True
+                  tags = {
+                      "app" = "wordpress"
+                      "Name" = metadata.name + "-" + projectName
+                  }
+              }
               spec.providerConfigRef.name = providerConfigName
-          }
-          subnets = [ 
-              {
-                  apiVersion = "ec2.aws.upbound.io/v1beta1"
-                  kind = "Subnet"
-                  metadata.name = subnet_config.name
-                  metadata.annotations: {
-                      "krm.kcl.dev/composition-resource-name" = subnet_config.name + subnet_config.zone
-                  }
-                  spec.forProvider = {
-                      region = region
-                      vpcIdSelector.matchControllerRef = True
-                      availabilityZone = subnet_config.zone
-                      cidrBlock = subnet_config.cidr
-                      mapPublicIpOnLaunch = True if subnet_config.type == "public" else False
-                      tags = {
-                        "app" = "wordpress"
-                        "Name" = metadata.name + "-" + projectName
-                        "Type" = subnet_config.type
-                      }
-                  }
-                  spec.providerConfigRef.name = providerConfigName
-              } for subnet_config in database_subnet_configs
+          } for route_config in routeTableConfig
           ]
-          routeTable = [
-              {
-                  apiVersion = "ec2.aws.upbound.io/v1beta1"
-                  kind = "RouteTable"
-                  metadata.name = "route-table-" + route_config.name
-                  metadata.labels = {
-                        route_table = route_config.name
-                  }  
-                  spec.forProvider = {
-                      region = region
-                      vpcIdSelector.matchControllerRef = True
-                      tags = {
-                          "app" = "wordpress"
-                          "Name" = metadata.name + "-" + projectName
-                      }
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "RouteTableAssociation"
+              metadata.name = "routetable-private-" + subnet_config.name
+              spec.forProvider = {
+                  region = region
+                  routeTableIdSelector.matchControllerRef = True
+                  routeTableIdSelector.matchLabels = {
+                        "route_table" = "private"
                   }
-                  spec.providerConfigRef.name = providerConfigName
-              } for route_config in routeTableConfig
+                  subnetIdRef.name = subnet_config.name
+                  subnetIdSelector.matchControllerRef = True
+                  subnetIdSelector.matchLabels = {
+                    "type" = "private"
+                  }
+              }
+              spec.providerConfigRef.name = providerConfigName
+          } for subnet_config in database_subnet_configs if subnet_config.type == "private"
           ]
-          elasticIP = {
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "RouteTableAssociation"
+              metadata.name = "routetable-" + subnet_config.name
+              spec.forProvider = {
+                  region = region
+                  routeTableIdSelector.matchControllerRef = True
+                  routeTableIdSelector.matchLabels = {
+                        "route_table" = "public"
+                  }
+                  subnetIdRef.name = subnet_config.name
+                  subnetIdSelector.matchControllerRef = True
+                  subnetIdSelector.matchLabels = {
+                    "type" = "public"
+                  }
+              }
+              spec.providerConfigRef.name = providerConfigName
+          } for subnet_config in database_subnet_configs if subnet_config.type == "public"
+          ]
+          _resources += [
+          {
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "EIP"
               metadata.name = "eip-nat-gateway-az1"
               metadata.labels = {
-                    eip = az1
-              }  
+                    eip = "az1"
+              }
               spec.forProvider = {
                       region = region
                       tags = {
@@ -125,5 +166,32 @@ spec:
                       }
               }
               spec.providerConfigRef.name = providerConfigName
+          },{
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "NATGateway"
+              metadata.name = "nat-gateway-az1"
+              metadata.labels = {
+                    natgatewayaz1 = "nat-az1"
+              }
+              spec.forProvider = {
+                      region = region
+                      allocationIdSelector.matchControllerRef = True
+                      connectivityType = "public"
+                      subnetIdSelector.matchControllerRef = True
+                      tags = {
+                          "app" = "wordpress"
+                          "Name" = metadata.name + "-" + projectName
+                      }
+              }
+              spec.providerConfigRef.name = providerConfigName
           }
-          items = [vpc, gateway, elasticIP] + subnets + routeTable
+          ]                                   
+          items = _resources
+  - step: ready
+    functionRef:
+      name: function-auto-ready                  
+
+
+
+
+
