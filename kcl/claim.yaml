@@ -6,4 +6,4 @@ metadata:
 spec:
   parameters:
     projectName: wordpress-team1s
-    vpccidrBlock: 172.16.0.0/16
+

@@ -19,7 +19,7 @@ spec:
       spec:
         source: |
           projectName = option("params")?.oxr?.spec.parameters.projectName or "nodefined"
-          vpccidrBlock = option("params")?.oxr?.spec.parameters.vpccidrBlock or "10.0.0.0/16" 
+          vpccidrBlock = option("params")?.oxr?.spec.parameters.vpccidrBlock or "172.16.0.0/16" 
           region = option("params")?.oxr?.spec.region or "us-east-1"
           providerConfigName = option("params")?.oxr?.spec?.providerConfigName or "segoja7"
           tags_base = {
@@ -229,6 +229,9 @@ spec:
               apiVersion = "ec2.aws.upbound.io/v1beta1"
               kind = "SecurityGroup"
               metadata.name = sg.name + "securitygroup"
+              metadata.labels = {
+                    securitygroup = sg.name  
+              }             
               spec.forProvider = {
                   description = sg.name + " Wordpress Security Group"
                   name = metadata.name
@@ -242,7 +245,35 @@ spec:
               }
               spec.providerConfigRef.name = providerConfigName
           } for sg in securityGroupsConfig
-          ]                                   
+          ]
+
+          sgConfig = [
+              {"name": "http-rule", "description": "Allow access to EC2 from ELB", "fromPort": 80, "toPort": 80, "ipProtocol": "tcp"},
+              {"name": "http-rule2", "description": "Allow access to EC2 from ELB", "fromPort": 8080, "toPort": 8080, "ipProtocol": "tcp"},
+          ]
+          _resources += [
+          {
+              apiVersion = "ec2.aws.upbound.io/v1beta1"
+              kind = "SecurityGroupIngressRule"
+              metadata.name = sg.name
+              spec.forProvider = {
+                  description = sg.description
+                  fromPort = sg.fromPort
+                  toPort = sg.toPort
+                  ipProtocol = sg.ipProtocol
+                  region = region
+                  securityGroupIdSelector.matchControllerRef = True
+                  securityGroupIdSelector.matchLabels = {
+                        "securitygroup" = "ec2"
+                  }                  
+                  tags = {
+                      "app" = "wordpress"
+                      "Name" = metadata.name + "-" + projectName
+                  }
+              }
+              spec.providerConfigRef.name = providerConfigName
+          } for sg in sgConfig
+          ]                                              
           items = _resources
   - step: ready
     functionRef:
